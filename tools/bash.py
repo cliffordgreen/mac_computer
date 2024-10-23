@@ -1,4 +1,3 @@
-#<tools/bash.py>
 import asyncio
 import os
 from typing import ClassVar, Literal
@@ -6,7 +5,7 @@ from typing import ClassVar, Literal
 from anthropic.types.beta import BetaToolBash20241022Param
 
 from .base import BaseAnthropicTool, CLIResult, ToolError, ToolResult
-
+from .run import run
 
 class _BashSession:
     """A session of a bash shell."""
@@ -14,7 +13,7 @@ class _BashSession:
     _started: bool
     _process: asyncio.subprocess.Process
 
-    command: str = "/bin/bash"
+    command: str = "/bin/zsh"  # Use zsh as default shell on Mac
     _output_delay: float = 0.2  # seconds
     _timeout: float = 120.0  # seconds
     _sentinel: str = "<<exit>>"
@@ -29,7 +28,6 @@ class _BashSession:
 
         self._process = await asyncio.create_subprocess_shell(
             self.command,
-            preexec_fn=os.setsid,
             shell=True,
             bufsize=0,
             stdin=asyncio.subprocess.PIPE,
@@ -74,7 +72,7 @@ class _BashSession:
 
         # read output from the process, until the sentinel is found
         try:
-            async with asyncio.timeout(self._timeout):
+            async with asyncio.timeout(self._timeout) as timeout_cm:
                 while True:
                     await asyncio.sleep(self._output_delay)
                     # if we read directly from stdout/stderr, it will wait forever for

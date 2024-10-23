@@ -6,6 +6,8 @@ import platform
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any, cast
+from enum import Enum
+
 
 from anthropic import Anthropic, APIResponse
 from anthropic.types import (
@@ -21,7 +23,21 @@ from anthropic.types.beta import (
     BetaToolResultBlockParam,
 )
 
-from .tools import BashTool, ComputerTool, EditTool, ToolCollection, ToolResult
+from tools.bash import BashTool
+from tools.computer import ComputerTool
+from tools.edit import EditTool
+from tools.collection import ToolCollection
+from tools.base import ToolResult
+
+class StrEnum(str, Enum):
+    def __str__(self) -> str:
+        return self.value
+
+class Sender(StrEnum):
+    USER = "user"
+    BOT = "assistant"
+    TOOL = "tool"
+
 
 BETA_FLAG = "computer-use-2024-10-22"
 DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
@@ -31,6 +47,15 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 * You can install Mac applications using brew install commands.
 * To open Safari or other Mac applications, use the 'open' command.
 * GUI applications can be started directly without display settings.
+* For keyboard shortcuts, use macOS conventions:
+  - Use 'command' (not 'ctrl') for most shortcuts (e.g., command+t for new tab)
+  - Common macOS shortcuts: 
+    * command+t (new tab)
+    * command+n (new window)
+    * command+w (close tab/window)
+    * command+q (quit application)
+    * command+c (copy)
+    * command+v (paste)
 * When using bash tool with commands that output large quantities of text, redirect into a tmp file and use str_replace_editor or `grep -n -B <lines before> -A <lines after> <query> <filename>` to confirm output.
 * When viewing a page it can be helpful to zoom out so that you can see everything on the page. Either that, or make sure you scroll down to see everything before deciding something isn't available.
 * When using your computer function calls, they take a while to run and send back to you. Where possible/feasible, try to chain multiple of these calls all into one function calls request.

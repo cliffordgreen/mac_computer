@@ -3,7 +3,8 @@ import base64
 import os
 import shlex
 import shutil
-from enum import StrEnum
+import subprocess
+from enum import Enum
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
@@ -31,42 +32,33 @@ Action = Literal[
     "cursor_position",
 ]
 
-
 class Resolution(TypedDict):
     width: int
     height: int
 
-
-# sizes above XGA/WXGA are not recommended (see README.md)
-# scale down to one of these targets if ComputerTool._scaling_enabled is set
-MAX_SCALING_TARGETS: dict[str, Resolution] = {
-    "XGA": Resolution(width=1024, height=768),  # 4:3
-    "WXGA": Resolution(width=1280, height=800),  # 16:10
-    "FWXGA": Resolution(width=1366, height=768),  # ~16:9
-}
-
+class StrEnum(str, Enum):
+    def __str__(self) -> str:
+        return self.value
 
 class ScalingSource(StrEnum):
     COMPUTER = "computer"
     API = "api"
 
+MAX_SCALING_TARGETS: dict[str, Resolution] = {
+    "XGA": Resolution(width=1024, height=768),
+    "WXGA": Resolution(width=1280, height=800),
+    "FWXGA": Resolution(width=1366, height=768),
+}
 
 class ComputerToolOptions(TypedDict):
-    display_height_px: int
     display_width_px: int
+    display_height_px: int
     display_number: int | None
-
 
 def chunks(s: str, chunk_size: int) -> list[str]:
     return [s[i : i + chunk_size] for i in range(0, len(s), chunk_size)]
 
-
 class ComputerTool(BaseAnthropicTool):
-    """
-    A tool that allows the agent to interact with the screen, keyboard, and mouse of the current computer.
-    The tool parameters are defined by Anthropic and are not editable.
-    """
-
     name: Literal["computer"] = "computer"
     api_type: Literal["computer_20241022"] = "computer_20241022"
     width: int
@@ -75,6 +67,26 @@ class ComputerTool(BaseAnthropicTool):
 
     _screenshot_delay = 2.0
     _scaling_enabled = True
+
+    def __init__(self):
+        super().__init__()
+        try:
+            cmd = "system_profiler SPDisplaysDataType | grep Resolution"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            resolution = result.stdout.strip()
+            if resolution:
+                width, height = map(int, resolution.split(":")[1].split("x"))
+                self.width = width
+                self.height = height
+            else:
+                self.width = 1440
+                self.height = 900
+        except Exception:
+            self.width = 1440
+            self.height = 900
+
+        self.display_num = None
+        self._display_prefix = ""
 
     @property
     def options(self) -> ComputerToolOptions:
@@ -89,30 +101,6 @@ class ComputerTool(BaseAnthropicTool):
 
     def to_params(self) -> BetaToolComputerUse20241022Param:
         return {"name": self.name, "type": self.api_type, **self.options}
-
-    def __init__(self):
-        super().__init__()
-
-        # Get screen dimensions using system_profiler on Mac
-        try:
-            cmd = "system_profiler SPDisplaysDataType | grep Resolution"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            resolution = result.stdout.strip()
-            if resolution:
-                # Parse resolution string like "Resolution: 2560 x 1600"
-                width, height = map(int, resolution.split(":")[1].split("x"))
-                self.width = width
-                self.height = height
-            else:
-                # Fallback values
-                self.width = 1440
-                self.height = 900
-        except Exception:
-            self.width = 1440
-            self.height = 900
-
-        self.display_num = None
-        self._display_prefix = ""
 
     async def __call__(
         self,
@@ -137,11 +125,23 @@ class ComputerTool(BaseAnthropicTool):
             )
 
             if action == "mouse_move":
-                return await self.shell(f"{self.xdotool} mousemove --sync {x} {y}")
+                cmd = f"""osascript -e 'tell application "System Events" to set mouse position to {{{x}, {y}}}'"""
+                return await self.shell(cmd)
             elif action == "left_click_drag":
-                return await self.shell(
-                    f"{self.xdotool} mousedown 1 mousemove --sync {x} {y} mouseup 1"
-                )
+                cmds = [
+                    f"""osascript -e 'tell application "System Events" to set mouse position to {{{x}, {y}}}'""",
+                    """osascript -e 'tell application "System Events" to key down {button: 0}'""",
+                    """osascript -e 'tell application "System Events" to key up {button: 0}'"""
+                ]
+                return await self.shell(" && ".join(cmds))
+
+        if action in ("key", "type"):
+            if text is None:
+                raise ToolError(f"text is required for {action}")
+            if coordinate is not None:
+                raise ToolError(f"coordinate is not accepted for {action}")
+            if not isinstance(text, str):
+                raise ToolError(output=f"{text} must be a string")
 
         if action in ("key", "type"):
             if text is None:
@@ -152,12 +152,92 @@ class ComputerTool(BaseAnthropicTool):
                 raise ToolError(output=f"{text} must be a string")
 
             if action == "key":
-                return await self.shell(f"{self.xdotool} key -- {text}")
+                # Map of special keys to their key codes
+                key_codes = {
+                    "return": "36",
+                    "tab": "48",
+                    "space": "49",
+                    "delete": "51",
+                    "escape": "53",
+                    "arrow-left": "123",
+                    "arrow-right": "124",
+                    "arrow-down": "125",
+                    "arrow-up": "126",
+                    "home": "115",
+                    "end": "119",
+                    "page-up": "116",
+                    "page-down": "121",
+                }
+
+                # Map of modifier keys
+                modifier_map = {
+                    "ctrl": "control",
+                    "control": "control",
+                    "cmd": "command",
+                    "command": "command",
+                    "alt": "option",
+                    "option": "option",
+                    "shift": "shift"
+                }
+
+                if "+" in text:
+                    parts = [part.lower().strip() for part in text.split("+")]
+                    modifiers = []
+                    key = parts[-1]
+
+                    # Process modifiers
+                    for mod in parts[:-1]:
+                        if mod not in modifier_map:
+                            raise ToolError(f"Invalid modifier key: {mod}. Valid modifiers are: {', '.join(modifier_map.keys())}")
+                        modifiers.append(modifier_map[mod])
+
+                    # For single character keys with modifiers
+                    if len(key) == 1:
+                        modifier_string = " down, ".join(modifiers)
+                        cmd = f"""osascript -e '
+                            tell application "System Events"
+                                key down {{{modifier_string}}}
+                                keystroke "{key}"
+                                key up {{{modifier_string}}}
+                            end tell'"""
+                    else:
+                        # For special keys with modifiers
+                        if key not in key_codes:
+                            raise ToolError(f"Invalid key: {key}. Valid special keys are: {', '.join(key_codes.keys())}")
+                        
+                        modifier_string = " down, ".join(modifiers)
+                        cmd = f"""osascript -e '
+                            tell application "System Events"
+                                key down {{{modifier_string}}}
+                                key code {key_codes[key]}
+                                key up {{{modifier_string}}}
+                            end tell'"""
+                else:
+                    # For single special keys without modifiers
+                    if text.lower() not in key_codes:
+                        raise ToolError(
+                            f"Invalid key: {text}. Valid keys are: {', '.join(key_codes.keys())}\n"
+                            f"For combinations, use: ctrl+key, command+key, alt+key, shift+key"
+                        )
+                    
+                    cmd = f"""osascript -e '
+                        tell application "System Events"
+                            key code {key_codes[text.lower()]}
+                        end tell'"""
+
+                return await self.shell(cmd)
+
             elif action == "type":
                 results: list[ToolResult] = []
                 for chunk in chunks(text, TYPING_GROUP_SIZE):
-                    cmd = f"{self.xdotool} type --delay {TYPING_DELAY_MS} -- {shlex.quote(chunk)}"
+                    # Escape quotes and other special characters
+                    escaped_chunk = chunk.replace('"', '\\"').replace("'", "'\\''")
+                    cmd = f"""osascript -e '
+                        tell application "System Events"
+                            keystroke "{escaped_chunk}"
+                        end tell'"""
                     results.append(await self.shell(cmd, take_screenshot=False))
+
                 screenshot_base64 = (await self.screenshot()).base64_image
                 return ToolResult(
                     output="".join(result.output or "" for result in results),
@@ -181,35 +261,35 @@ class ComputerTool(BaseAnthropicTool):
             if action == "screenshot":
                 return await self.screenshot()
             elif action == "cursor_position":
-                result = await self.shell(
-                    f"{self.xdotool} getmouselocation --shell",
-                    take_screenshot=False,
-                )
+                cmd = """osascript -e 'tell application "System Events" to get position of mouse'"""
+                result = await self.shell(cmd, take_screenshot=False)
                 output = result.output or ""
-                x, y = self.scale_coordinates(
-                    ScalingSource.COMPUTER,
-                    int(output.split("X=")[1].split("\n")[0]),
-                    int(output.split("Y=")[1].split("\n")[0]),
-                )
-                return result.replace(output=f"X={x},Y={y}")
+                try:
+                    x, y = map(int, output.strip().split(", "))
+                    x, y = self.scale_coordinates(
+                        ScalingSource.COMPUTER,
+                        x,
+                        y,
+                    )
+                    return result.replace(output=f"X={x},Y={y}")
+                except ValueError:
+                    return result
             else:
-                click_arg = {
-                    "left_click": "1",
-                    "right_click": "3",
-                    "middle_click": "2",
-                    "double_click": "--repeat 2 --delay 500 1",
-                }[action]
-                return await self.shell(f"{self.xdotool} click {click_arg}")
+                click_commands = {
+                    "left_click": """osascript -e 'tell application "System Events" to click button 1 of mouse'""",
+                    "right_click": """osascript -e 'tell application "System Events" to click button 2 of mouse'""",
+                    "middle_click": """osascript -e 'tell application "System Events" to click button 3 of mouse'""",
+                    "double_click": """osascript -e 'tell application "System Events" to click button 1 of mouse' -e 'delay 0.1' -e 'tell application "System Events" to click button 1 of mouse'""",
+                }
+                return await self.shell(click_commands[action])
 
         raise ToolError(f"Invalid action: {action}")
 
     async def screenshot(self):
-        """Take a screenshot of the current screen and return the base64 encoded image."""
         output_dir = Path(OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"screenshot_{uuid4().hex}.png"
 
-        # Use screencapture on macOS
         screenshot_cmd = f"screencapture -x {path}"
         
         result = await self.shell(screenshot_cmd, take_screenshot=False)
@@ -228,38 +308,32 @@ class ComputerTool(BaseAnthropicTool):
         raise ToolError(f"Failed to take screenshot: {result.error}")
 
     async def shell(self, command: str, take_screenshot=True) -> ToolResult:
-        """Run a shell command and return the output, error, and optionally a screenshot."""
         _, stdout, stderr = await run(command)
         base64_image = None
 
         if take_screenshot:
-            # delay to let things settle before taking a screenshot
             await asyncio.sleep(self._screenshot_delay)
             base64_image = (await self.screenshot()).base64_image
 
         return ToolResult(output=stdout, error=stderr, base64_image=base64_image)
 
     def scale_coordinates(self, source: ScalingSource, x: int, y: int):
-        """Scale coordinates to a target maximum resolution."""
         if not self._scaling_enabled:
             return x, y
         ratio = self.width / self.height
         target_dimension = None
         for dimension in MAX_SCALING_TARGETS.values():
-            # allow some error in the aspect ratio - not ratios are exactly 16:9
             if abs(dimension["width"] / dimension["height"] - ratio) < 0.02:
                 if dimension["width"] < self.width:
                     target_dimension = dimension
                 break
         if target_dimension is None:
             return x, y
-        # should be less than 1
         x_scaling_factor = target_dimension["width"] / self.width
         y_scaling_factor = target_dimension["height"] / self.height
         if source == ScalingSource.API:
             if x > self.width or y > self.height:
                 raise ToolError(f"Coordinates {x}, {y} are out of bounds")
-            # scale up
             return round(x / x_scaling_factor), round(y / y_scaling_factor)
-        # scale down
         return round(x * x_scaling_factor), round(y * y_scaling_factor)
+
