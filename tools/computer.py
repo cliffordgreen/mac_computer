@@ -8,6 +8,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
+import pyautogui
+
 
 from anthropic.types.beta import BetaToolComputerUse20241022Param
 
@@ -115,7 +117,7 @@ class ComputerTool(BaseAnthropicTool):
                 raise ToolError(f"coordinate is required for {action}")
             if text is not None:
                 raise ToolError(f"text is not accepted for {action}")
-            if not isinstance(coordinate, list) or len(coordinate) != 2:
+            if not isinstance(coordinate, (list, tuple)) or len(coordinate) != 2:
                 raise ToolError(f"{coordinate} must be a tuple of length 2")
             if not all(isinstance(i, int) and i >= 0 for i in coordinate):
                 raise ToolError(f"{coordinate} must be a tuple of non-negative ints")
@@ -125,23 +127,11 @@ class ComputerTool(BaseAnthropicTool):
             )
 
             if action == "mouse_move":
-                cmd = f"""osascript -e 'tell application "System Events" to set mouse position to {{{x}, {y}}}'"""
-                return await self.shell(cmd)
+                pyautogui.moveTo(x, y)
+                return ToolResult(output=f"Moved mouse to {x}, {y}")
             elif action == "left_click_drag":
-                cmds = [
-                    f"""osascript -e 'tell application "System Events" to set mouse position to {{{x}, {y}}}'""",
-                    """osascript -e 'tell application "System Events" to key down {button: 0}'""",
-                    """osascript -e 'tell application "System Events" to key up {button: 0}'"""
-                ]
-                return await self.shell(" && ".join(cmds))
-
-        if action in ("key", "type"):
-            if text is None:
-                raise ToolError(f"text is required for {action}")
-            if coordinate is not None:
-                raise ToolError(f"coordinate is not accepted for {action}")
-            if not isinstance(text, str):
-                raise ToolError(output=f"{text} must be a string")
+                pyautogui.dragTo(x, y)
+                return ToolResult(output=f"Dragged mouse to {x}, {y}")
 
         if action in ("key", "type"):
             if text is None:
@@ -261,27 +251,22 @@ class ComputerTool(BaseAnthropicTool):
             if action == "screenshot":
                 return await self.screenshot()
             elif action == "cursor_position":
-                cmd = """osascript -e 'tell application "System Events" to get position of mouse'"""
-                result = await self.shell(cmd, take_screenshot=False)
-                output = result.output or ""
-                try:
-                    x, y = map(int, output.strip().split(", "))
-                    x, y = self.scale_coordinates(
-                        ScalingSource.COMPUTER,
-                        x,
-                        y,
-                    )
-                    return result.replace(output=f"X={x},Y={y}")
-                except ValueError:
-                    return result
+                x, y = pyautogui.position()
+                x, y = self.scale_coordinates(
+                    ScalingSource.COMPUTER,
+                    x,
+                    y,
+                )
+                return ToolResult(output=f"X={x},Y={y}")
             else:
-                click_commands = {
-                    "left_click": """osascript -e 'tell application "System Events" to click button 1 of mouse'""",
-                    "right_click": """osascript -e 'tell application "System Events" to click button 2 of mouse'""",
-                    "middle_click": """osascript -e 'tell application "System Events" to click button 3 of mouse'""",
-                    "double_click": """osascript -e 'tell application "System Events" to click button 1 of mouse' -e 'delay 0.1' -e 'tell application "System Events" to click button 1 of mouse'""",
+                click_actions = {
+                    "left_click": pyautogui.click,
+                    "right_click": pyautogui.rightClick,
+                    "middle_click": pyautogui.middleClick,
+                    "double_click": pyautogui.doubleClick,
                 }
-                return await self.shell(click_commands[action])
+                click_actions[action]()
+                return ToolResult(output=f"Performed {action}")
 
         raise ToolError(f"Invalid action: {action}")
 

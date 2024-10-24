@@ -72,7 +72,7 @@ class _BashSession:
 
         # read output from the process, until the sentinel is found
         try:
-            async with asyncio.timeout(self._timeout) as timeout_cm:
+            async def read_output():
                 while True:
                     await asyncio.sleep(self._output_delay)
                     # if we read directly from stdout/stderr, it will wait forever for
@@ -80,8 +80,9 @@ class _BashSession:
                     output = self._process.stdout._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
                     if self._sentinel in output:
                         # strip the sentinel and break
-                        output = output[: output.index(self._sentinel)]
-                        break
+                        return output[:output.index(self._sentinel)]
+
+            output = await asyncio.wait_for(read_output(), timeout=self._timeout)
         except asyncio.TimeoutError:
             self._timed_out = True
             raise ToolError(
