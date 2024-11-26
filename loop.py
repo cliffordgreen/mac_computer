@@ -7,7 +7,8 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any, cast
 from enum import Enum
-
+import getpass
+import time
 
 from anthropic import Anthropic, APIResponse
 from anthropic.types import (
@@ -28,6 +29,11 @@ from tools.computer import ComputerTool
 from tools.edit import EditTool
 from tools.collection import ToolCollection
 from tools.base import ToolResult
+import json
+from pathlib import Path
+
+WORKFLOWS_PATH = Path("workflows.json")
+
 
 class StrEnum(str, Enum):
     def __str__(self) -> str:
@@ -41,6 +47,7 @@ class Sender(StrEnum):
 
 BETA_FLAG = "computer-use-2024-10-22"
 DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+
 
 SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 * You are utilizing a macOS environment using {platform.machine()} architecture with internet access.
@@ -62,10 +69,63 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 * The current date is {datetime.today().strftime('%A, %B %-d, %Y')}.
 </SYSTEM_CAPABILITY>
 
+<AIRBNB>
+How to access tax documents in airbnb 
+
+If a tax document was issued to you, you can get a copy of it in your Airbnb account.
+
+Click on your profile picture and select Account
+On the Account page, select Taxes
+Under the Taxpayers tab, select the > icon
+The Tax documents tab shows a list of tax documents issued to you (up to 4 years)
+Alternatively, you can find all tax documents at user account level:
+
+Go to earnings dashboard
+Select Taxes information > Tax documents
+Note: Go to Tax documents to find a list of all tax documents issued to you over the last 4 years. Refer to the “Your 202X Tax Form(s) Is Ready!” email Airbnb sent, which would've referenced a Form 1099 if you are receiving one.
+</AIRBNB>
+
+<ETRADE>
+Go to the E*TRADE website and log in to your account.
+Select the Tax Center.
+Check Tax year 2023
+If customer has multiple account, check all accounts of documents.
+</ETRADE>
+
+
 <IMPORTANT>
 * If the item you are looking at is a pdf, if after taking a single screenshot of the pdf it seems that you want to read the entire document instead of trying to continue to read the pdf from your screenshots + navigation, determine the URL, use curl to download the pdf, install and use pdftotext to convert it to a text file, and then read that text file directly with your StrReplaceEditTool.
 </IMPORTANT>"""
 
+# def load_workflows():
+#     if WORKFLOWS_PATH.exists():
+#         with open(WORKFLOWS_PATH, 'r') as f:
+#             return json.load(f)
+#     return {}
+
+# def save_workflows(workflows):
+#     with open(WORKFLOWS_PATH, 'w') as f:
+#         json.dump(workflows, f, indent=2)
+
+tool_collection = ToolCollection(
+    ComputerTool(),
+    BashTool(),
+    EditTool(),
+)
+
+
+# async def sampling_loop(
+#     *,
+#     model: str = DEFAULT_MODEL,
+#     system_prompt_suffix: str,
+#     messages: list[BetaMessageParam],
+#     output_callback: Callable[[BetaContentBlock], None],
+#     tool_output_callback: Callable[[ToolResult, str], None],
+#     api_response_callback: Callable[[APIResponse[BetaMessage]], None],
+#     api_key: str,
+#     only_n_most_recent_images: int | None = None,
+#     max_tokens: int = 4096,
+# ):
 async def sampling_loop(
     *,
     model: str = DEFAULT_MODEL,
@@ -77,6 +137,7 @@ async def sampling_loop(
     api_key: str,
     only_n_most_recent_images: int | None = None,
     max_tokens: int = 4096,
+    task_description: str,  # New parameter
 ):
     """
     Agentic sampling loop for the assistant/tool interaction of computer use.
@@ -86,9 +147,57 @@ async def sampling_loop(
         BashTool(),
         EditTool(),
     )
+
+    downloads_dir = Path.home() / "Downloads"
+    start_time = time.time()
+    # workflows = load_workflows()
+    #     # Check if a workflow exists for the given task
+    # if task_description in workflows:
+    #     # Execute the saved workflow
+    #     saved_workflow = workflows[task_description]
+    #     print(f"Executing saved workflow for task: {task_description}")
+
+    #     # Collect parameters if any
+    #     parameters = {}
+    #     for step in saved_workflow:
+    #         if 'parameters' in step:
+    #             for param in step['parameters']:
+    #                 if param not in parameters:
+    #                     if 'password' in param.lower():
+    #                         parameters[param] = getpass.getpass(f"Please provide {param}: ")
+    #                     else:
+    #                         parameters[param] = input(f"Please provide {param}: ")
+
+    #     for step in saved_workflow:
+    #         tool_name = step['tool_name']
+    #         tool_input = step['tool_input'].copy()
+
+    #         # Replace placeholders with actual values
+    #         for key, value in tool_input.items():
+    #             if isinstance(value, str) and value.startswith('{') and value.endswith('}'):
+    #                 param_name = value.strip('{}')
+    #                 tool_input[key] = parameters.get(param_name, value)
+
+    #         result = await tool_collection.run(
+    #             name=tool_name,
+    #             tool_input=tool_input,
+    #         )
+
+    #         # Handle the tool result
+    #         tool_output_callback(result, tool_use_id=None)
+
+    #         if result.error:
+    #             print(f"Workflow step failed: {result.error}")
+    #             # If a step fails, fall back to the standard loop
+    #             break
+    #     else:
+    #         # All steps succeeded, return the messages
+    #         return messages
+
     system = (
         f"{SYSTEM_PROMPT}{' ' + system_prompt_suffix if system_prompt_suffix else ''}"
     )
+    # current_workflow_steps = []
 
     while True:
         if only_n_most_recent_images:
@@ -118,6 +227,17 @@ async def sampling_loop(
         )
 
         tool_result_content: list[BetaToolResultBlockParam] = []
+        # for content_block in cast(list[BetaContentBlock], response.content):
+        #     output_callback(content_block)
+        #     if content_block.type == "tool_use":
+        #         result = await tool_collection.run(
+        #             name=content_block.name,
+        #             tool_input=cast(dict[str, Any], content_block.input),
+        #         )
+        #         tool_result_content.append(
+        #             _make_api_tool_result(result, content_block.id)
+        #         )
+        #         tool_output_callback(result, content_block.id)
         for content_block in cast(list[BetaContentBlock], response.content):
             output_callback(content_block)
             if content_block.type == "tool_use":
@@ -130,8 +250,56 @@ async def sampling_loop(
                 )
                 tool_output_callback(result, content_block.id)
 
+                # # Record the successful tool use
+                # if not result.error:
+                #     sanitized_input = content_block.input.copy()
+                #     # Parameterize sensitive information
+                #     parameters = []
+                #     for key in ['password', 'user_id', 'username', 'email']:
+                #         if key in sanitized_input:
+                #             sanitized_input[key] = f'{{{key}}}'
+                #             parameters.append(key)
+                #     current_workflow_steps.append({
+                #         'tool_name': content_block.name,
+                #         'tool_input': sanitized_input,
+                #         'parameters': parameters
+                #     })
+                # else:
+                #     # If there is an error, reset the workflow steps
+                #     current_workflow_steps = []
+                #     break
+
+        # if not tool_result_content:
+        #     return messages
         if not tool_result_content:
+            # # If the conversation ends successfully, save the workflow
+            # recent_files = [
+            #     f for f in downloads_dir.glob("*1099*.pdf") 
+            #     if f.stat().st_mtime > start_time
+            # ]
+            # if recent_files:
             return messages
+            
+            # Check for explicit completion messages
+            last_message = response.content[-1] if response.content else None
+            if isinstance(last_message, dict) and last_message.get("type") == "text":
+                text = last_message.get("text", "").lower()
+                if any(phrase in text for phrase in [
+                    "has been downloaded",
+                    "task has been completed",
+                    "successfully downloaded",
+                    "file is in the downloads folder",
+                    "1099 form has been downloaded",
+                    "downloaded",
+                    "complete"
+                ]):
+                    return messages
+
+            if current_workflow_steps:
+                workflows[task_description] = current_workflow_steps
+                save_workflows(workflows)
+                print(f"Workflow saved for task: {task_description}")
+                return messages
 
         messages.append({"content": tool_result_content, "role": "user"})
 

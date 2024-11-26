@@ -160,62 +160,145 @@ class ComputerTool(BaseAnthropicTool):
                 }
 
                 # Map of modifier keys
+                # modifier_map = {
+                #     "ctrl": "control",
+                #     "control": "control",
+                #     "cmd": "command",
+                #     "command": "command",
+                #     "alt": "option",
+                #     "option": "option",
+                #     "shift": "shift"
+                # }
                 modifier_map = {
-                    "ctrl": "control",
-                    "control": "control",
-                    "cmd": "command",
-                    "command": "command",
-                    "alt": "option",
-                    "option": "option",
-                    "shift": "shift"
+                    "ctrl": "control down",
+                    "control": "control down",
+                    "cmd": "command down",
+                    "command": "command down",
+                    "alt": "option down",
+                    "option": "option down",
+                    "shift": "shift down"
                 }
 
                 if "+" in text:
-                    parts = [part.lower().strip() for part in text.split("+")]
+                    parts = [part.strip() for part in text.split("+")]
                     modifiers = []
                     key = parts[-1]
 
+                    # Standardize key
+                    key = key.lower().replace('_', '-')
+
                     # Process modifiers
                     for mod in parts[:-1]:
+                        mod = mod.lower()
                         if mod not in modifier_map:
                             raise ToolError(f"Invalid modifier key: {mod}. Valid modifiers are: {', '.join(modifier_map.keys())}")
                         modifiers.append(modifier_map[mod])
 
-                    # For single character keys with modifiers
-                    if len(key) == 1:
-                        modifier_string = " down, ".join(modifiers)
-                        cmd = f"""osascript -e '
-                            tell application "System Events"
-                                key down {{{modifier_string}}}
-                                keystroke "{key}"
-                                key up {{{modifier_string}}}
-                            end tell'"""
-                    else:
-                        # For special keys with modifiers
-                        if key not in key_codes:
-                            raise ToolError(f"Invalid key: {key}. Valid special keys are: {', '.join(key_codes.keys())}")
-                        
-                        modifier_string = " down, ".join(modifiers)
-                        cmd = f"""osascript -e '
-                            tell application "System Events"
-                                key down {{{modifier_string}}}
-                                key code {key_codes[key]}
-                                key up {{{modifier_string}}}
-                            end tell'"""
-                else:
-                    # For single special keys without modifiers
-                    if text.lower() not in key_codes:
-                        raise ToolError(
-                            f"Invalid key: {text}. Valid keys are: {', '.join(key_codes.keys())}\n"
-                            f"For combinations, use: ctrl+key, command+key, alt+key, shift+key"
-                        )
-                    
-                    cmd = f"""osascript -e '
-                        tell application "System Events"
-                            key code {key_codes[text.lower()]}
-                        end tell'"""
+                    modifier_string = ", ".join(modifiers)
 
+                    if len(key) == 1:
+                        # Escape quotes in the key character
+                        escaped_key = key.replace('"', '\\"')
+                        cmd = f"""osascript -e 'tell application "System Events" to keystroke "{escaped_key}" using {{{modifier_string}}}'"""
+                    else:
+                        if key not in key_codes:
+                            valid_keys = ', '.join(key_codes.keys())
+                            raise ToolError(
+                                f"Invalid key: {key}. Valid keys are: {valid_keys}. "
+                                "Please use lowercase letters and replace underscores with hyphens."
+                            )
+                        cmd = f"""osascript -e 'tell application "System Events" to key code {key_codes[key]} using {{{modifier_string}}}'"""
+                else:
+                    # Handle keys without modifiers
+                    key = text.lower().replace('_', '-')
+                    if len(key) == 1:
+                        escaped_key = key.replace('"', '\\"')
+                        cmd = f"""osascript -e 'tell application "System Events" to keystroke "{escaped_key}"'"""
+                    else:
+                        if key not in key_codes:
+                            valid_keys = ', '.join(key_codes.keys())
+                            raise ToolError(
+                                f"Invalid key: {key}. Valid keys are: {valid_keys}. "
+                                "Please use lowercase letters and replace underscores with hyphens."
+                            )
+                        cmd = f"""osascript -e 'tell application "System Events" to key code {key_codes[key]}'"""
+
+                # Execute the command
                 return await self.shell(cmd)
+
+
+
+                #second change
+                # if "+" in text:
+                #     parts = [part.lower().strip() for part in text.split("+")]
+                #     modifiers = []
+                #     key = parts[-1]
+
+                #     # Process modifiers
+                #     for mod in parts[:-1]:
+                #         if mod not in modifier_map:
+                #             raise ToolError(f"Invalid modifier key: {mod}. Valid modifiers are: {', '.join(modifier_map.keys())}")
+                #         modifiers.append(modifier_map[mod])
+
+                #     modifier_string = ", ".join(modifiers)
+
+                #     if len(key) == 1:
+                #         # Escape quotes in the key character
+                #         escaped_key = key.replace('"', '\\"')
+                #         cmd = f"""osascript -e 'tell application "System Events" to keystroke "{escaped_key}" using {{{modifier_string}}}'"""
+                #     else:
+                #         # For special keys with modifiers
+                #         if key not in key_codes:
+                #             raise ToolError(f"Invalid key: {key}. Valid special keys are: {', '.join(key_codes.keys())}")
+                #         cmd = f"""osascript -e 'tell application "System Events" to key code {key_codes[key]} using {{{modifier_string}}}'"""
+#first change
+                # if "+" in text:
+                #     parts = [part.lower().strip() for part in text.split("+")]
+                #     modifiers = []
+                #     key = parts[-1]
+
+                #     # Process modifiers
+                #     for mod in parts[:-1]:
+                #         if mod not in modifier_map:
+                #             raise ToolError(f"Invalid modifier key: {mod}. Valid modifiers are: {', '.join(modifier_map.keys())}")
+                #         modifiers.append(modifier_map[mod])
+
+                #     # For single character keys with modifiers
+                #     if len(key) == 1:
+                #         modifier_string = " down, ".join(modifiers)
+                #         cmd = f"""osascript -e '
+                #             tell application "System Events"
+                #                 key down {{{modifier_string}}}
+                #                 keystroke "{key}"
+                #                 key up {{{modifier_string}}}
+                #             end tell'"""
+                #     else:
+                #         # For special keys with modifiers
+                #         if key not in key_codes:
+                #             raise ToolError(f"Invalid key: {key}. Valid special keys are: {', '.join(key_codes.keys())}")
+                        
+                #         modifier_string = " down, ".join(modifiers)
+                #         cmd = f"""osascript -e '
+                #             tell application "System Events"
+                #                 key down {{{modifier_string}}}
+                #                 key code {key_codes[key]}
+                #                 key up {{{modifier_string}}}
+                #             end tell'"""
+                #secoond change
+                # else:
+                #     # For single special keys without modifiers
+                #     if text.lower() not in key_codes:
+                #         raise ToolError(
+                #             f"Invalid key: {text}. Valid keys are: {', '.join(key_codes.keys())}\n"
+                #             f"For combinations, use: ctrl+key, command+key, alt+key, shift+key"
+                #         )
+                    
+                #     cmd = f"""osascript -e '
+                #         tell application "System Events"
+                #             key code {key_codes[text.lower()]}
+                #         end tell'"""
+
+                # return await self.shell(cmd)
 
             elif action == "type":
                 results: list[ToolResult] = []

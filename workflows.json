@@ -1,0 +1,318 @@
+{
+  "go to https://qbo.intuit.com/app/homepage in firefox and create an invoice (sales tab) for cliff green, email cliff.r.green@gmail.com, for 2 parrots, each cost 300 dollars. if you need to login you can use the userid: brian_smith_iamtestpass password: password1!": [
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          249,
+          765
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "type",
+        "text": "https://qbo.intuit.com/app/homepage"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "key",
+        "text": "Return"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "type",
+        "text": "brian_smith_iamtestpass"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "key",
+        "text": "Tab"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "type",
+        "text": "Password1!"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "key",
+        "text": "Return"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          591,
+          480
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "type",
+        "text": "Password1!"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          591,
+          424
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          591,
+          424
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "type",
+        "text": "https://quickbooks.intuit.com/"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "key",
+        "text": "Return"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          591,
+          557
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          591,
+          351
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    }
+  ],
+  "use chrome (only chrome ), assume you need to open a new tab, and to navigate to Etrade login, from there use the test credentials should already be saved there and let it autofill, even if you can't see the password assume its autofilled. If you hit a verifcation step, assume the number is correct and have the website send the code. then download the available 1099s. Confirm the 1099 is download by looking in the Downloads folder. IF youre asked for a code, have them send it and i will provide it to you! youre the best and you can do this! please dont make mistakes": [
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "key",
+        "text": "command+t"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          724,
+          456
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          1161,
+          491
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "screenshot"
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "mouse_move",
+        "coordinate": [
+          724,
+          433
+        ]
+      },
+      "parameters": []
+    },
+    {
+      "tool_name": "computer",
+      "tool_input": {
+        "action": "left_click"
+      },
+      "parameters": []
+    }
+  ]
+}
