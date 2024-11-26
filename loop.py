@@ -87,9 +87,9 @@ Note: Go to Tax documents to find a list of all tax documents issued to you over
 
 <ETRADE>
 Go to the E*TRADE website and log in to your account.
-Select the Tax Center.
-Check Tax year 2023
-If customer has multiple account, check all accounts of documents.
+Select Dccuments 
+Then  selection Tax Document 2023 Tax year
+Then download allss relevent 1099 forms 
 </ETRADE>
 
 
