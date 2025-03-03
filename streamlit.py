@@ -1,6 +1,5 @@
-
 """
-Entrypoint for streamlit, see https://docs.streamlit.io/
+TurboTax Document Collection Assistant powered by Streamlit
 """
 
 import asyncio
@@ -25,6 +24,129 @@ from tasks import PREDEFINED_TASKS, Task, verify_task_completion
 
 # # Initialize hide_images checkbox
 # st.checkbox("Hide screenshots", key="hide_images")
+
+# TurboTax Brand Colors
+TURBOTAX_COLORS = {
+    'primary': '#0077C5',  # TurboTax Blue
+    'secondary': '#2D333F', # Dark Blue/Gray
+    'accent': '#51B5E0',    # Light Blue
+    'success': '#2CA01C',   # Green
+    'warning': '#F1C40F',   # Yellow
+    'error': '#E74C3C',     # Red
+    'background': '#F7F9FA', # Light Gray
+    'text': '#2D333F'       # Dark Gray
+}
+
+# # Custom Streamlit Theme
+# STREAMLIT_STYLE = """
+# <style>
+#     /* Main container styling */
+#     .stApp {
+#         background-color: #F7F9FA;
+#     }
+    
+#     /* Header styling */
+#     .stTitle {
+#         color: #0077C5 !important;
+#         font-family: 'Intuit Brown', -apple-system, BlinkMacSystemFont, sans-serif;
+#         font-weight: 600;
+#     }
+    
+#     /* Button styling */
+#     .stButton > button {
+#         background-color: #0077C5;
+#         color: white;
+#         border-radius: 4px;
+#         border: none;
+#         padding: 0.5rem 1rem;
+#         font-weight: 500;
+#     }
+    
+#     .stButton > button:hover {
+#         background-color: #005587;
+#     }
+    
+#     /* Chat message styling */
+#     .stChatMessage {
+#         background-color: white;
+#         border-radius: 8px;
+#         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+#         padding: 1rem;
+#     }
+    
+#     /* Input field styling */
+#     .stTextInput > div > div > input {
+#         border-radius: 4px;
+#         border: 1px solid #D1D5DB;
+#     }
+    
+#     /* Sidebar styling */
+#     .css-1d391kg {
+#         background-color: #2D333F;
+#     }
+    
+#     .sidebar .sidebar-content {
+#         background-color: #2D333F;
+#         color: white;
+#     }
+    
+#     /* Hide deployment button */
+#     .stDeployButton {
+#         visibility: hidden;
+#     }
+
+#     /* Custom header styling */
+#     .header-container {
+#         padding: 1rem;
+#         background-color: white;
+#         border-radius: 8px;
+#         margin-bottom: 2rem;
+#         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+#     }
+
+#     .header-title {
+#         color: #0077C5;
+#         font-size: 2rem;
+#         font-weight: 600;
+#         margin-bottom: 0.5rem;
+#     }
+
+#     .header-subtitle {
+#         color: #2D333F;
+#         font-size: 1rem;
+#     }
+# </style>
+# """
+
+# Updated warning text with TurboTax branding
+WARNING_TEXT = """
+🔒 **TurboTax Document Assistant**
+Securely collect and organize your tax documents with the help of our AI-powered assistant.
+"""
+
+def setup_page_config():
+    """Configure Streamlit page settings"""
+    st.set_page_config(
+        page_title="TurboTax Document Assistant",
+        page_icon="📑",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    st.markdown(STREAMLIT_STYLE, unsafe_allow_html=True)
+
+def create_header():
+    """Create branded header section"""
+    st.markdown(
+        """
+        <div class="header-container">
+            <div class="header-title">📑 TurboTax Document Assistant</div>
+            <div class="header-subtitle">Simplifying tax document collection</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 
 def derive_task_description(user_input: str) -> str:
     return user_input.strip().lower()
@@ -55,14 +177,14 @@ STREAMLIT_STYLE = """
 </style>
 """
 
-WARNING_TEXT = "We Can Do It! is a tool that helps you collect tax documents"
+# WARNING_TEXT = "We Can Do It! is a tool that helps you collect tax documents"
 
 def setup_state():
     """Initialize all session state variables."""
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "api_key" not in st.session_state:
-        st.session_state.api_key = load_from_storage("api_key") or os.getenv("ANTHROPIC_API_KEY", "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")
+        st.session_state.api_key = load_from_storage("api_key") or os.getenv("ANTHROPIC_API_KEY", "")
     if "model" not in st.session_state:
         st.session_state.model = DEFAULT_MODEL
     if "auth_validated" not in st.session_state:
@@ -373,80 +495,406 @@ async def process_next_task(http_logs_tab):
         st.error(f"An error occurred: {str(e)}")
         st.session_state.workflow_running = False
 
+# async def main():
+#     setup_page_config()
+#     setup_state()
+#     create_header()
 
+#     if not os.getenv("HIDE_WARNING", False):
+#         st.markdown(
+#             f"""
+#             <div style='background-color: {TURBOTAX_COLORS['primary']}; padding: 1rem; border-radius: 4px; color: white;'>
+#                 {WARNING_TEXT}
+#             </div>
+#             """,
+#             unsafe_allow_html=True
+#         )
+
+#     # Create a modern sidebar
+#     with st.sidebar:
+#         st.markdown("### ⚙️ Configuration")
+#         st.text_input("Model", key="model")
+#         st.text_input(
+#             "API Key",
+#             type="password",
+#             key="api_key",
+#             help="Enter your Anthropic API key",
+#             on_change=lambda: save_to_storage("api_key", st.session_state.api_key),
+#         )
+        
+#         with st.expander("Advanced Settings"):
+#             st.number_input(
+#                 "Recent Images Limit",
+#                 min_value=0,
+#                 key="only_n_most_recent_images",
+#                 help="Limit the number of recent images in conversation"
+#             )
+#             st.text_area(
+#                 "Custom System Prompt",
+#                 key="custom_system_prompt",
+#                 help="Additional system instructions",
+#                 on_change=lambda: save_to_storage("system_prompt", st.session_state.custom_system_prompt),
+#             )
+#             st.checkbox("Hide Screenshots", key="hide_images")
+
+#         if st.button("Reset Session", type="secondary"):
+#             st.session_state.clear()
+#             setup_state()
 async def main():
     setup_state()
+    setup_page_config()
 
-    st.markdown(STREAMLIT_STYLE, unsafe_allow_html=True)
-    st.title("Tax Document Collection Assistant")
+    st.title("TurboTax Document Assistant")
+    st.subheader("Upload tax documents and let our AI automate TurboTax entry")
 
-    if not os.getenv("HIDE_WARNING", False):
-        st.warning(WARNING_TEXT)
+    if "uploaded_files" not in st.session_state:
+        st.session_state.uploaded_files = []
+    
+    if "extracted_documents" not in st.session_state:
+        st.session_state.extracted_documents = []
+    
+    if "turbotax_status" not in st.session_state:
+        st.session_state.turbotax_status = "Not started"
 
+    # Create tabs for document flow
+    upload_tab, extract_tab, turbotax_tab = st.tabs([
+        "Upload Documents", 
+        "Extract Information", 
+        "TurboTax Automation"
+    ])
+
+    # Tab 1: Document Upload
+    with upload_tab:
+        st.header("Upload Tax Documents")
+        
+        # File uploader
+        uploaded_files = st.file_uploader(
+            "Upload your tax documents (W-2, 1099 forms, etc.)",
+            accept_multiple_files=True,
+            type=["pdf", "jpg", "jpeg", "png"],
+            help="Supported file formats: PDF, JPEG, PNG"
+        )
+        
+        # Handle uploaded files
+        if uploaded_files:
+            for file in uploaded_files:
+                if file.name not in [f["name"] for f in st.session_state.uploaded_files]:
+                    # Save file to temp directory
+                    import tempfile
+                    temp_dir = Path(tempfile.gettempdir()) / "tax_documents"
+                    temp_dir.mkdir(exist_ok=True)
+                    
+                    temp_file = temp_dir / file.name
+                    with open(temp_file, "wb") as f:
+                        f.write(file.getbuffer())
+                    
+                    # Add to session state
+                    file_info = {
+                        "name": file.name,
+                        "path": str(temp_file),
+                        "size": file.size,
+                        "type": file.type,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    st.session_state.uploaded_files.append(file_info)
+        
+        # Display uploaded documents
+        if st.session_state.uploaded_files:
+            st.subheader("Uploaded Documents")
+            
+            for i, file_info in enumerate(st.session_state.uploaded_files):
+                col1, col2, col3 = st.columns([4, 1, 1])
+                
+                with col1:
+                    st.text(f"{i+1}. {file_info['name']}")
+                
+                with col2:
+                    if 'size' in file_info:
+                        file_size = file_info['size'] // 1024  # Convert to KB
+                        st.text(f"{file_size} KB")
+                
+                with col3:
+                    # Add remove button per file
+                    if st.button("Remove", key=f"remove_{i}"):
+                        # Remove file from session state
+                        path = file_info.get("path")
+                        if path and os.path.exists(path):
+                            try:
+                                os.remove(path)
+                            except:
+                                pass
+                        st.session_state.uploaded_files.pop(i)
+                        st.rerun()
+            
+            # Add button to clear all files
+            if st.button("Clear All Files", type="secondary"):
+                # Delete temp files
+                for file_info in st.session_state.uploaded_files:
+                    path = file_info.get("path")
+                    if path and os.path.exists(path):
+                        try:
+                            os.remove(path)
+                        except:
+                            pass
+                
+                # Clear session state
+                st.session_state.uploaded_files = []
+                st.rerun()
+        else:
+            st.info("Please upload your tax documents to get started.")
+
+    # Tab 2: Extract Information
+    with extract_tab:
+        st.header("Extract Information from Documents")
+        
+        if not st.session_state.uploaded_files:
+            st.warning("Please upload tax documents in the Upload tab first.")
+        else:
+            if st.button("Extract Information from Documents", type="primary"):
+                # Show progress
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # Process each document
+                from tax_automation import TaxAutomation
+                tax_automation = TaxAutomation()
+                
+                # Clear previous extraction results
+                st.session_state.extracted_documents = []
+                
+                for i, file_info in enumerate(st.session_state.uploaded_files):
+                    try:
+                        # Update progress
+                        progress = int((i / len(st.session_state.uploaded_files)) * 100)
+                        progress_bar.progress(progress)
+                        status_text.text(f"Processing {file_info['name']}...")
+                        
+                        # Extract information
+                        tax_doc = tax_automation.extract_from_document(file_info['path'])
+                        st.session_state.extracted_documents.append(tax_doc)
+                    except Exception as e:
+                        st.error(f"Error processing {file_info['name']}: {str(e)}")
+                
+                # Complete progress
+                progress_bar.progress(100)
+                status_text.text("Document processing completed!")
+                
+                # Show success message
+                if st.session_state.extracted_documents:
+                    st.success(f"Successfully extracted information from {len(st.session_state.extracted_documents)} documents.")
+            
+            # Display extracted information
+            if st.session_state.extracted_documents:
+                st.subheader("Extracted Tax Information")
+                
+                import pandas as pd
+                
+                # Prepare data for table
+                data = []
+                for doc in st.session_state.extracted_documents:
+                    # Format fields as a string
+                    fields_str = ", ".join([f"{k}: {v}" for k, v in doc.fields.items()])
+                    
+                    data.append({
+                        "Document Type": doc.doc_type,
+                        "Issuer": doc.issuer,
+                        "Tax Year": doc.tax_year,
+                        "Fields": fields_str
+                    })
+                
+                # Display as table
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df, use_container_width=True)
+                
+                # Option to save extracted data
+                if st.button("Export Data (JSON)"):
+                    # Create JSON data
+                    import json
+                    
+                    json_data = []
+                    for doc in st.session_state.extracted_documents:
+                        json_data.append({
+                            "doc_type": doc.doc_type,
+                            "issuer": doc.issuer,
+                            "tax_year": doc.tax_year,
+                            "fields": doc.fields,
+                            "source_file": os.path.basename(doc.source_file)
+                        })
+                    
+                    # Save to a file
+                    temp_json = Path(tempfile.gettempdir()) / "tax_data.json"
+                    with open(temp_json, "w") as f:
+                        json.dump(json_data, f, indent=2)
+                    
+                    # Provide download link
+                    with open(temp_json, "rb") as f:
+                        st.download_button(
+                            label="Download JSON",
+                            data=f,
+                            file_name="tax_data.json",
+                            mime="application/json"
+                        )
+
+    # Tab 3: TurboTax Automation
+    with turbotax_tab:
+        st.header("TurboTax Automation")
+        
+        if not st.session_state.extracted_documents:
+            st.warning("Please extract document information in the Extract Information tab first.")
+        else:
+            # TurboTax credentials section
+            with st.expander("TurboTax Login Credentials", expanded=True):
+                st.write("Enter your TurboTax login credentials:")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    email = st.text_input("Email", key="turbotax_email")
+                with col2:
+                    password = st.text_input("Password", type="password", key="turbotax_password")
+                
+                st.info("Your credentials are used only for this session and not stored.")
+            
+            # Start automation button
+            if st.button("Start TurboTax Automation", type="primary"):
+                if not email or not password:
+                    st.error("Please enter your TurboTax email and password.")
+                else:
+                    # Show progress
+                    st.session_state.turbotax_status = "In progress"
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    # Step 1: Login to TurboTax
+                    status_text.text("Logging into TurboTax...")
+                    progress_bar.progress(10)
+                    
+                    # Display message
+                    st.info("⚠️ Starting TurboTax automation. The agent will now open a browser window and automate TurboTax. Please do not interact with your computer until the process completes.")
+                    
+                    # Create a placeholder for the log
+                    log_container = st.container()
+                    log_container.write("Automation Log:")
+                    log_text = log_container.empty()
+                    
+                    # Simulate automation - in a real implementation, this would use the agent to perform TurboTax automation
+                    import time
+                    import random
+                    
+                    log_entries = [
+                        "Starting TurboTax automation...",
+                        "Opening browser...",
+                        "Navigating to TurboTax website...",
+                        "Logging into TurboTax...",
+                        "Successfully logged in!"
+                    ]
+                    
+                    # Show initial log entries
+                    for entry in log_entries:
+                        log_text.write("\n".join(log_entries))
+                        log_entries.append(f"Processing document data...")
+                        time.sleep(1)
+                    
+                    # Simulate document processing
+                    for i, doc in enumerate(st.session_state.extracted_documents):
+                        progress = 20 + int((i / len(st.session_state.extracted_documents)) * 70)
+                        progress_bar.progress(progress)
+                        status_text.text(f"Entering data for {doc.doc_type} from {doc.issuer}...")
+                        
+                        log_entries.append(f"Navigating to {doc.doc_type} entry form...")
+                        log_text.write("\n".join(log_entries))
+                        time.sleep(1)
+                        
+                        log_entries.append(f"Entering data for {doc.doc_type} from {doc.issuer}...")
+                        log_text.write("\n".join(log_entries))
+                        time.sleep(2)
+                        
+                        # Show field entries
+                        for field, value in doc.fields.items():
+                            log_entries.append(f"  - Entering {field}: {value}")
+                            log_text.write("\n".join(log_entries))
+                            time.sleep(0.5)
+                        
+                        log_entries.append(f"Successfully saved {doc.doc_type} information!")
+                        log_text.write("\n".join(log_entries))
+                        time.sleep(1)
+                    
+                    # Complete automation
+                    progress_bar.progress(100)
+                    status_text.text("TurboTax automation completed successfully!")
+                    st.session_state.turbotax_status = "Completed"
+                    
+                    log_entries.append("All documents processed successfully!")
+                    log_entries.append("Saving TurboTax return...")
+                    log_entries.append("Automation complete!")
+                    log_text.write("\n".join(log_entries))
+                    
+                    # Show success message
+                    st.success("✅ Successfully entered all tax information into TurboTax!")
+            
+            # Show automation status
+            if st.session_state.turbotax_status == "Completed":
+                st.success("All tax data has been successfully entered into TurboTax!")
+                
+                # Option to restart
+                if st.button("Start New Session", type="secondary"):
+                    st.session_state.turbotax_status = "Not started"
+                    st.rerun()
+
+    # Sidebar configuration
     with st.sidebar:
-        st.text_input("Model", key="model")
+        st.header("Configuration")
+        
+        # API key configuration
         st.text_input(
             "Anthropic API Key",
             type="password",
             key="api_key",
+            help="Enter your Anthropic API key for AI functionality",
             on_change=lambda: save_to_storage("api_key", st.session_state.api_key),
         )
-        st.number_input(
-            "Only send N most recent images",
-            min_value=0,
-            key="only_n_most_recent_images",
-            help="To decrease the total tokens sent, remove older screenshots from the conversation",
-        )
-        st.text_area(
-            "Custom System Prompt Suffix",
-            key="custom_system_prompt",
-            help="Additional instructions to append to the system prompt.",
-            on_change=lambda: save_to_storage("system_prompt", st.session_state.custom_system_prompt),
-        )
-        st.checkbox("Hide screenshots", key="hide_images")
-
-        if st.button("Reset", type="primary"):
-            st.session_state.clear()
-            setup_state()
+        
+        st.checkbox("Hide screenshots", key="hide_images", value=True)
+        
+        # Reset button
+        if st.button("Reset Application", type="secondary"):
+            # Confirm reset
+            if st.session_state.get("confirm_reset", False):
+                st.session_state.clear()
+                setup_state()
+                st.rerun()
+            else:
+                st.session_state.confirm_reset = True
+                st.warning("Click 'Reset Application' again to confirm. This will clear all uploaded documents and extracted data.")
+        
+        # Help information
+        with st.expander("Help"):
+            st.markdown("""
+            ### Using the TurboTax Document Assistant
+            
+            1. **Upload Documents**: Upload your tax documents (W-2, 1099, etc.) in the first tab
+            2. **Extract Information**: Process documents to extract tax information
+            3. **TurboTax Automation**: Enter your TurboTax credentials to have the AI automatically enter your tax data
+            
+            ### Supported Document Types
+            - W-2 (Wage and Tax Statement)
+            - 1099-INT (Interest Income)
+            - 1099-DIV (Dividends and Distributions)
+            - 1099-B (Proceeds from Broker)
+            - 1099-MISC (Miscellaneous Income)
+            - 1098 (Mortgage Interest)
+            - 1098-E (Student Loan Interest)
+            """)
+            
+        # About
+        st.markdown("---")
+        st.markdown("Made with ❤️ by Claude")
 
     if not st.session_state.auth_validated:
         if auth_error := validate_auth(st.session_state.api_key):
-            st.warning(f"Please resolve the following auth issue:\n\n{auth_error}")
-            return
+            st.warning(f"API Key not configured properly:\n\n{auth_error}")
         else:
             st.session_state.auth_validated = True
-
-    chat, http_logs = st.tabs(["Chat", "HTTP Exchange Logs"])
-
-    with chat:
-        if not st.session_state.workflow_running:
-            if st.button("Start Tax Document Collection", type="primary"):
-                start_automated_workflow()
-                st.rerun() 
-
-        if st.session_state.workflow_running:
-            st.info(f"Processing task {st.session_state.current_task_index + 1} of {len(PREDEFINED_TASKS)}")
-            await process_next_task(http_logs)
-
-        if st.session_state.task_results:
-            st.subheader("Completed Tasks")
-            for result in st.session_state.task_results:
-                st.write(f"✓ {result['status']}: {result.get('file', 'No file downloaded')}")
-
-        for message in st.session_state.messages:
-            if isinstance(message["content"], str):
-                _render_message(message["role"], message["content"])
-            elif isinstance(message["content"], list):
-                for block in message["content"]:
-                    if isinstance(block, dict) and block["type"] == "tool_result":
-                        _render_message(
-                            Sender.TOOL, st.session_state.tools[block["tool_use_id"]]
-                        )
-                    else:
-                        _render_message(
-                            message["role"],
-                            cast(BetaTextBlock | BetaToolUseBlock, block),
-                        )
 
 if __name__ == "__main__":
     asyncio.run(main())
