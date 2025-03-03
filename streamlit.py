@@ -5,9 +5,10 @@ TurboTax Document Collection Assistant powered by Streamlit
 import asyncio
 import base64
 import os
+import tempfile
 from datetime import datetime
 from functools import partial
-from pathlib import PosixPath
+from pathlib import Path, PosixPath
 from typing import cast
 from enum import Enum
 import time
@@ -580,7 +581,6 @@ async def main():
             for file in uploaded_files:
                 if file.name not in [f["name"] for f in st.session_state.uploaded_files]:
                     # Save file to temp directory
-                    import tempfile
                     temp_dir = Path(tempfile.gettempdir()) / "tax_documents"
                     temp_dir.mkdir(exist_ok=True)
                     
