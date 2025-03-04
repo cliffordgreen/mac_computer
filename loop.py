@@ -46,7 +46,7 @@ class Sender(StrEnum):
 
 
 BETA_FLAG = "computer-use-2024-10-22"
-DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
 
 
 SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
